@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Fill by Voice</string>
+
+    <string name="tab_scan">Scan</string>
+    <string name="tab_forms">Forms</string>
+    <string name="tab_my_info">My Info</string>
+    <string name="tab_settings">Settings</string>
+</resources>
