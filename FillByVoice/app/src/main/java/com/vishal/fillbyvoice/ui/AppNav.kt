@@ -9,12 +9,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.vishal.fillbyvoice.R
+import com.vishal.fillbyvoice.voice.Language
+import com.vishal.fillbyvoice.voice.saveLanguage
+import com.vishal.fillbyvoice.voice.savedLanguage
 
 enum class Tab(val label: Int, val icon: Int) {
     SCAN(R.string.tab_scan, R.drawable.ic_scan),
@@ -25,7 +30,19 @@ enum class Tab(val label: Int, val icon: Int) {
 
 @Composable
 fun FillByVoiceApp() {
+    val context = LocalContext.current
+    var language by remember { mutableStateOf(context.savedLanguage()) }
     var selected by rememberSaveable { mutableStateOf(Tab.SCAN) }
+
+    val chosen = language
+    val choose: (Language) -> Unit = {
+        context.saveLanguage(it)
+        language = it
+    }
+    if (chosen == null) {
+        LanguageScreen(onChoose = choose)
+        return
+    }
 
     Scaffold(
         bottomBar = {
@@ -43,10 +60,10 @@ fun FillByVoiceApp() {
     ) { innerPadding ->
         val modifier = Modifier.padding(innerPadding)
         when (selected) {
-            Tab.SCAN -> ScanScreen(modifier)
+            Tab.SCAN -> ScanScreen(chosen, modifier)
             Tab.FORMS -> FormsScreen(modifier)
             Tab.MY_INFO -> MyInfoScreen(modifier)
-            Tab.SETTINGS -> SettingsScreen(modifier)
+            Tab.SETTINGS -> SettingsScreen(chosen, onLanguage = choose, modifier = modifier)
         }
     }
 }

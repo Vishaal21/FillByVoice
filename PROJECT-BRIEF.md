@@ -21,9 +21,9 @@
 | AI Edge Gallery + Gemma 4 E2B downloaded on the phone | Done |
 | Offline Hindi + English speech packs, Hindi TTS voice | Done (14:05) |
 | Gemma tests in AI Edge Gallery (below) | Done 16:27. All pass with the few-shot English prompt |
-| 2 to 3 photos of printed forms / question sheets | Not confirmed yet |
-| Git init + first commit | Not done (wait for Vishal's "commit") |
-| App code | Still the template. Next: `BUILD-STEPS.md` Part 1 |
+| Test forms | Google Form, SBI and ICICI account opening PDFs (shown on the laptop screen). Demo needs a printed form |
+| Git | Repo at workspace root, 1 commit (Vishal commits manually) |
+| App code (22:05) | Parts 1 to 5 done on the phone. Part 6 (voice) built, test pending. See `BUILD-STEPS.md` |
 
 Gemma 4 E2B test results (AI Edge Gallery, GPU, Sat 16:21):
 
@@ -50,7 +50,11 @@ What this changes:
 - Pitch line: **Paper form in. Filled form out. By voice, in your language, on your phone.**
 - **Input**: a photo of a paper form (bank account opening, KYC, loan, insurance) **or any page of printed questions** (a plain sheet works, no boxes needed).
 - The phone reads the page, asks each question aloud, listens, checks the answer, and **writes the answers onto the same page**.
-- **Output**: the same page with answers drawn in, as a **PDF** (Download + Share). Page 2 of the PDF is a plain question and answer list, so an answer that does not fit on the page is never lost.
+- **Output: two separate PDFs**, each with Download + Share (decided 26 Sep):
+  - **Filled form PDF** (to submit): the same page with answers drawn in. Print, sign, submit where printouts are accepted. Answers with no room go on an extra page, never lost.
+  - **Answer sheet PDF** (to copy by hand): only questions + answers in big text. The user (or a helper) fills the real paper form from it.
+- Why people use it even when copying: the hard part of a form is knowing **what** to write (Hindi explanations, English form) and getting it **right** (checks catch a wrong Aadhaar / IFSC / date before the bank rejects it). Main user: Bank Mitra / CSC agents, for whom the app is a Hindi interviewer + checker.
+- No-copying upgrades: **fill the original PDF form** (first later extra) and **online forms** (Phase 2).
 - **The user never taps to place anything.** They only listen and speak. The one tap is the camera button.
 - **Languages: Hindi + English only, for now.** Telugu is dropped to save time. All examples here and in `BUILD-STEPS.md` use Hindi or English only.
 - Users (for the pitch):
@@ -223,7 +227,7 @@ What this changes:
                                                          "sahi hai?"                               [Download PDF] [Share]
 ```
 - A question is skipped if the profile has it (the user just says "haan").
-- **No taps to place answers.** Kotlin draws each answer in the empty space after or below its question. With no room, the answer goes only to PDF page 2.
+- **No taps to place answers.** Kotlin draws each answer in the empty space after or below its question. With no room, the answer goes on an extra page of the filled form PDF (and is always in the answer sheet PDF).
 - The real paper stays empty. The user prints the PDF, shares it, or copies from the list.
 - Testing can use a page shown on the laptop screen. **The demo uses a printed paper form.**
 
@@ -267,7 +271,7 @@ voice/Listener.kt         SpeechRecognizer
 validate/Validators.kt    Kotlin rules (section 8)
 flow/QuestionLoop.kt      ask -> listen -> clean -> check -> confirm
 output/PageRenderer.kt    draw answers on the photo
-output/PdfExporter.kt     PDF (page 1 drawn page, page 2 list), Download, Share
+output/PdfExporter.kt     2 PDFs (filled form, answer sheet), Download, Share
 data/ProfileStore.kt      DataStore profile
 data/FormStore.kt         per-form folder
 ```
@@ -283,9 +287,9 @@ data/FormStore.kt         per-form folder
   - **Our app cannot read Gallery's copy** (each app has a private folder, like separate containers). **Done 16:32**: copied on the phone with `adb shell cp` (no download) to our app's folder:
     - `/sdcard/Android/data/com.vishal.fillbyvoice/files/gemma-4-E2B-it.litertlm` (2,588,147,712 bytes, same as Gallery's).
     - Source: `/sdcard/Android/data/com.google.ai.edge.gallery/files/Gemma_4_E2B_it/6e5c4f1e395deb959c494953478fa5cec4b8008f/gemma-4-E2B-it.litertlm`.
-    - The file is owned by `shell` (it was created by adb). If our app cannot open it in Part 4: `adb shell chmod 666 <our path>`, else download on the laptop and `adb push`.
+    - The file is owned by `shell` (it was created by adb), so our app got "Permission denied" in Part 4. **Fixed** with `adb shell chmod 666 <our path>` (now `-rw-rw-rw-`). Redo this after any new copy of the model.
     - **Never uninstall our app**: Android deletes this folder and the model with it. Normal Run from Android Studio is fine.
-  - **Speed line** on screen: `GPU | 52 tokens/sec | offline` (real hardware use, visible to the jury).
+  - **Speed line** on screen: `GPU | 48.7 tokens/sec | on-device` (measured in our app, 26 Sep, from LiteRT-LM's benchmark; real hardware use, visible to the jury).
 
 | Model (Google's numbers, flagship phone, GPU) | Size | Decode | First reply | Hindi | Verdict |
 |---|---|---|---|---|---|
@@ -306,7 +310,7 @@ data/FormStore.kt         per-form folder
 - **Voice**: SpeechRecognizer (`hi-IN`, `en-IN`, offline packs installed) + TextToSpeech. Wait for TTS to finish before listening, so the mic does not hear the phone.
 - **Profile**: DataStore (local key-value).
 - **Drawing**: Bitmap + Canvas (built in), `drawText` each answer at its spot.
-- **PDF**: PdfDocument (built in). Page 1 = drawn page, page 2 = list. **Download** saves to Downloads via MediaStore (visible in the Files app). **Share** uses FileProvider (a temporary read link for WhatsApp / Gmail, no internet).
+- **PDF**: PdfDocument (built in). Two files: filled form PDF (drawn page) and answer sheet PDF (questions + answers). **Download** saves to Downloads via MediaStore (visible in the Files app). **Share** uses FileProvider (a temporary read link for WhatsApp / Gmail, no internet).
 
 ---
 
@@ -321,7 +325,7 @@ data/FormStore.kt         per-form folder
 4: Sign below
 ```
 
-**Field finder output** (the model returns only this JSON):
+**Field finder output** (the model returns only this JSON, forced by a JSON schema; long pages go in chunks of about 25 lines; the app no longer asks for `ask_en`, English mode uses the form's label):
 ```json
 [
   { "line": 1, "id": "name",   "type": "text",   "ask_hi": "Aapka poora naam kya hai?",    "ask_en": "What is your full name?" },
@@ -330,12 +334,14 @@ data/FormStore.kt         per-form folder
 ]
 ```
 - `line`: the OCR line the question came from. Gemma skips headings and instructions (lines 0 and 4).
+- `label` (added after the ICICI test): the exact text of that line. Kotlin trusts `line` only if its text matches `label`, else uses the best-matching line, else drops the item (Gemma sometimes points at the wrong line number).
 - `id`: a stable key, used by the profile ("dob" on two forms is the same field).
-- `type`: one of `text`, `date`, `aadhaar`, `pan`, `ifsc`, `mobile`, `pincode`, `number`, `email`, `yesno`. It picks the Kotlin rule.
+- `type`: one of `text`, `date`, `aadhaar`, `pan`, `ifsc`, `mobile`, `pincode`, `number`, `email`, `yesno`, `choice`. It picks the Kotlin rule.
+- `choice` (tick boxes / radio / dropdown) also has `"options": ["Male", "Female", "Third Gender"]`, and `ask_hi` reads the options out. Kotlin matches the spoken answer to one option. Bank forms are full of these (gender, marital status, account type, occupation), so it is in the MVP (Parts 5 and 8).
 - **No pixels from Gemma** (small models get them wrong). Kotlin takes the box from OCR line `line`.
 - Bad JSON: retry once, then fall back to every OCR line ending in `?` or `:` as a `text` question.
 
-**Where an answer is drawn** (Kotlin): to the right of the question box if there is empty space before the next text; else below it, if there is a gap before the next line; else no room, so it goes only to PDF page 2.
+**Where an answer is drawn** (Kotlin): to the right of the question box if there is empty space before the next text; else below it, if there is a gap before the next line; else no room, so it goes on an extra page of the filled form PDF.
 ```
  Full Name     [Ramesh Kumar_______]     <- right of the question
  2. When were you born?
@@ -347,7 +353,8 @@ data/FormStore.kt         per-form folder
 files/forms/2026-09-26_1430/
   photo.jpg     original (shrunk)
   answers.json  the data
-  filled.pdf    page 1 drawn page, page 2 list
+  filled.pdf    filled form (to submit)
+  answers.pdf   answer sheet (to copy by hand)
 ```
 ```json
 {
@@ -417,7 +424,7 @@ files/forms/2026-09-26_1430/
 | Bad JSON from the model | Strict prompt with one example, retry once, then raw OCR lines |
 | Field finder keeps headings / wrong types / no Hindi (seen in test 4) | Few-shot English prompt. Kotlin keyword rules fix `type`, Hindi question templates per type, E4B if still weak |
 | Model ignores the output format | Kotlin formats the final value (date to `DD/MM/YYYY`, digits only for numbers) |
-| No room to draw an answer | Answer only on PDF page 2. Never ask the user to tap |
+| No room to draw an answer | Answer goes on an extra page of the filled form PDF, and is always in the answer sheet PDF. Never ask the user to tap |
 | Page printed in Hindi | Later extra: ML Kit Devanagari. For now, English-printed pages |
 | App cannot read Gallery's model file | Copied into our folder with `adb shell cp` (done). If our app still cannot open it: `chmod 666`, else download on the laptop + `adb push` |
 | Speech mishears numbers | Read back every answer, ask digits in groups of 4 |
