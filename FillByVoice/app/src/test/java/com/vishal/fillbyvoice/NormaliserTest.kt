@@ -9,6 +9,8 @@ import com.vishal.fillbyvoice.pipeline.matchOption
 import com.vishal.fillbyvoice.pipeline.missingYear
 import com.vishal.fillbyvoice.pipeline.pickField
 import com.vishal.fillbyvoice.pipeline.pickPosition
+import com.vishal.fillbyvoice.pipeline.printedInEnglish
+import com.vishal.fillbyvoice.pipeline.sameAnswerInEnglish
 import com.vishal.fillbyvoice.pipeline.saysNone
 import com.vishal.fillbyvoice.pipeline.spokenDate
 import com.vishal.fillbyvoice.pipeline.yesOrNo
@@ -204,5 +206,20 @@ class NormaliserTest {
         assertNull(pickPosition("नहीं", 4))
         assertNull(pickPosition("पांचवा", 4)) // not on the list
         assertNull(pickPosition("15 जनवरी 2022", 4))
+    }
+
+    @Test
+    fun hindiAnswersOnAnEnglishFormAreSpelledInEnglish() {
+        // The form's language comes from its own labels (SBI 10:12 run).
+        assertTrue(printedInEnglish(listOf("Branch Name", "1,Name*:", "2.Date of Birth*.")))
+        assertFalse(printedInEnglish(listOf("शाखा का नाम", "जन्म तिथि")))
+        assertTrue(printedInEnglish(listOf("नाम / Name of the Applicant", "जन्म तिथि / Date of Birth"))) // bilingual
+        // Gemma's spelling is kept only with English letters, every word and every number.
+        assertTrue(sameAnswerInEnglish("विशाल सिंह", "Vishal Singh"))
+        assertTrue(sameAnswerInEnglish("मकान नंबर १२ गांधी नगर", "Makan Number 12 Gandhi Nagar"))
+        assertFalse(sameAnswerInEnglish("विशाल सिंह", "Vishal")) // a word lost
+        assertFalse(sameAnswerInEnglish("मकान 12", "Makan 21")) // a number changed
+        assertFalse(sameAnswerInEnglish("विशाल सिंह", "विशाल Singh")) // still Hindi letters
+        assertFalse(sameAnswerInEnglish("किसान", "")) // nothing
     }
 }

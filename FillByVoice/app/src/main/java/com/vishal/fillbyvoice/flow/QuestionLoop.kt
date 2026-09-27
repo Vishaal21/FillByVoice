@@ -10,6 +10,7 @@ import com.vishal.fillbyvoice.pipeline.cleanLabel
 import com.vishal.fillbyvoice.pipeline.endsMidPhrase
 import com.vishal.fillbyvoice.pipeline.gemmaField
 import com.vishal.fillbyvoice.pipeline.hindiOption
+import com.vishal.fillbyvoice.pipeline.inEnglishLetters
 import com.vishal.fillbyvoice.pipeline.isAskingBack
 import com.vishal.fillbyvoice.pipeline.isFinish
 import com.vishal.fillbyvoice.pipeline.isSkip
@@ -17,6 +18,7 @@ import com.vishal.fillbyvoice.pipeline.missingYear
 import com.vishal.fillbyvoice.pipeline.phrase
 import com.vishal.fillbyvoice.pipeline.pickField
 import com.vishal.fillbyvoice.pipeline.pickPosition
+import com.vishal.fillbyvoice.pipeline.printedInEnglish
 import com.vishal.fillbyvoice.pipeline.saysNone
 import com.vishal.fillbyvoice.pipeline.shortName
 import com.vishal.fillbyvoice.pipeline.spokenDate
@@ -87,6 +89,9 @@ class QuestionLoop(
     // The user said "I am done" / "बस": no more questions.
     private var finished = false
 
+    // Hindi spoken on a form printed in English: free-text answers are written in English letters for the bank.
+    private var writeEnglish = false
+
     private fun update(state: LoopState) {
         current = state
         show(state)
@@ -94,6 +99,9 @@ class QuestionLoop(
 
     suspend fun run(questions: List<Question>): List<Answer> {
         val answers = mutableListOf<Answer>()
+        // You choose how you talk; the form decides how it is written (built 12:19).
+        writeEnglish = language == Language.HINDI && printedInEnglish(questions.map { it.label })
+        if (writeEnglish) Log.i(TAG, "Hindi spoken, form printed in English: text answers are written in English letters")
         for ((i, q) in questions.withIndex()) {
             // The same field twice ("8.Nationality:" and "9.Citizenship:" are both nationality, 10:12 run, SBI):
             // asked once, and that answer fills the second blank too. A second address has its own id (address_2).
@@ -223,12 +231,15 @@ class QuestionLoop(
                     say = language.pick(result.hi, result.en) + " " + question
                 }
                 is Checked.Ok -> {
-                    update(asking.copy(heard = answer, value = result.value))
-                    if (confirm(result.value, q.type)) {
-                        Log.i(TAG, "Q$number ${q.id}: saved \"${result.value}\"")
-                        return result.value
+                    // "विशाल सिंह" -> "Vishal Singh": the screen shows both (heard + value), the phone reads out the
+                    // English one. Numbers, codes, dates and options are already in English.
+                    val value = (if (writeEnglish && q.type == "text") inEnglishLetters(result.value) else null) ?: result.value
+                    update(asking.copy(heard = answer, value = value))
+                    if (confirm(value, q.type)) {
+                        Log.i(TAG, "Q$number ${q.id}: saved \"$value\"")
+                        return value
                     }
-                    Log.i(TAG, "Q$number ${q.id}: \"${result.value}\" not confirmed")
+                    Log.i(TAG, "Q$number ${q.id}: \"$value\" not confirmed")
                     say = language.pick("ठीक है, फिर से बताइए।", "Okay, please say it again.") + " " + question
                 }
             }

@@ -97,6 +97,7 @@ Gemma, OCR, every check, the filled form and the PDF all run on the phone. The a
 
 ## What's next
 
+- Speak one language, write the form in another. Today numbers, codes, dates and tick-box options are always written as the form wants; free text (name, address) is written in the spoken language. Next: answer in Hindi and get names and places in English letters (विशाल सिंह → VISHAL SINGH), shown in both scripts to confirm. The reverse for forms printed in Hindi.
 - Fill the bank's own PDF: every letter in its box, ready to print.
 - "IFSC क्या है?": spoken explanations of bank terms.
 - Scan Aadhaar / PAN once, later forms fill themselves.

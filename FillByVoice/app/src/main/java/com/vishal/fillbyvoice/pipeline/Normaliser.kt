@@ -311,6 +311,50 @@ private suspend fun gemmaOption(heard: String, options: List<String>): String? =
     null
 }
 
+// Which script the form is printed in, from its own labels: more English letters than Hindi ones = an English form.
+fun printedInEnglish(labels: List<String>): Boolean {
+    val text = labels.joinToString(" ")
+    return text.count { it in 'a'..'z' || it in 'A'..'Z' } > text.count { it in 'ऀ'..'ॿ' }
+}
+
+private val SPELL_SYSTEM = """
+Write the customer's Hindi answer on an Indian bank form in English letters, the way Indians usually spell it.
+Spell by sound, never translate. Keep every word and every number, in the same order.
+Reply with ONLY the answer in English letters.
+""".trimIndent()
+
+private val SPELL_EXAMPLES = listOf(
+    "विशाल सिंह" to "Vishal Singh",
+    "कोंडापुर हैदराबाद" to "Kondapur Hyderabad",
+    "मकान नंबर 12 गांधी नगर" to "Makan Number 12 Gandhi Nagar",
+    "सुनीता देवी" to "Sunita Devi",
+    "किसान" to "Kisan",
+)
+
+// Hindi spoken on an English form (built 12:19): "विशाल सिंह" -> "Vishal Singh", by sound, never translated, because the bank
+// reads English. Gemma spells it; code keeps it only if it passes the check below. Null: the Hindi answer stays.
+suspend fun inEnglishLetters(hindi: String): String? {
+    if (!DEVANAGARI.containsMatchIn(hindi)) return null
+    return try {
+        val reply = Gemma.ask(hindi, system = SPELL_SYSTEM, examples = SPELL_EXAMPLES).text.trim().trim('"', '.', ' ')
+        reply.takeIf { sameAnswerInEnglish(hindi, it) }
+            .also { Log.i(TAG, "Gemma spelled \"$hindi\" as \"$reply\": ${if (it != null) "kept" else "refused"}") }
+    } catch (e: Exception) {
+        if (e is CancellationException) throw e
+        Log.w(TAG, "Gemma could not spell \"$hindi\" in English letters", e)
+        null
+    }
+}
+
+// Code decides: only English letters, the same number of words, and every number kept ("मकान 12" -> "Makan 12").
+internal fun sameAnswerInEnglish(hindi: String, english: String): Boolean {
+    fun count(text: String) = text.trim().split(Regex("""\s+""")).size
+    fun numbers(text: String) = text.filter(Char::isDigit).map(Char::digitToInt)
+    return ENGLISH_SPELLING.matches(english) && count(english) == count(hindi) && numbers(english) == numbers(hindi)
+}
+
+private val ENGLISH_SPELLING = Regex("""[A-Za-z0-9][A-Za-z0-9 .,'/-]*""")
+
 // "एप्लीकेशन टाइप" for the form's "Application Type" (10:14 run): the rules match a name letter by letter, so a label
 // said in the other script is missed. Gemma picks the answer's number; code keeps only one that is on the list.
 suspend fun gemmaField(heard: String, names: List<List<String>>): Int? = try {
