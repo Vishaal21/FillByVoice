@@ -1,14 +1,17 @@
 package com.vishal.fillbyvoice.llm
 
 import android.content.Context
+import com.vishal.fillbyvoice.log.Log
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Content
+import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.ExperimentalApi
 import com.google.ai.edge.litertlm.ExperimentalFlags
 import com.google.ai.edge.litertlm.LiteRtLmJniException
+import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.ResponseFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,6 +19,7 @@ import java.io.File
 
 // Copied onto the phone with adb (see PROJECT-BRIEF section 6). Never bundled in the APK.
 private const val MODEL_FILE = "gemma-4-E2B-it.litertlm"
+private const val TAG = "Gemma"
 
 data class GemmaReply(val text: String, val tokensPerSecond: Double)
 
@@ -35,18 +39,33 @@ object Gemma {
         ExperimentalFlags.enableBenchmark = true
         // The cache keeps the compiled GPU program, so later app starts load faster.
         val cache = context.cacheDir.path
+        val began = System.currentTimeMillis()
         engine = try {
             start(model.path, Backend.GPU(), cache)
         } catch (e: LiteRtLmJniException) {
+            Log.w(TAG, "GPU failed, using CPU: ${e.message}")
             start(model.path, Backend.CPU(), cache)
         }
+        Log.i(TAG, "Loaded on $backendName in ${System.currentTimeMillis() - began} ms")
     }
 
     // One prompt in, one reply out. A fresh conversation each time, so prompts never mix.
-    // With a JSON schema, the runtime forces the reply to be valid JSON of that shape.
-    suspend fun ask(prompt: String, jsonSchema: String? = null): GemmaReply = withContext(Dispatchers.Default) {
+    // system: the fixed instructions. examples: (input, reply) pairs sent as earlier chat turns, so the
+    // model copies their shape. With a JSON schema, the runtime forces the reply to be valid JSON of that shape.
+    suspend fun ask(
+        prompt: String,
+        jsonSchema: String? = null,
+        system: String? = null,
+        examples: List<Pair<String, String>> = emptyList(),
+    ): GemmaReply = withContext(Dispatchers.Default) {
         val engine = checkNotNull(engine) { "Gemma is not loaded" }
-        val config = ConversationConfig(enableResponseFormat = jsonSchema != null)
+        val config = ConversationConfig(
+            systemInstruction = system?.let { Contents.of(it) },
+            initialMessages = examples.flatMap { (input, reply) ->
+                listOf(Message.user(input), Message.model(Contents.of(reply)))
+            },
+            enableResponseFormat = jsonSchema != null,
+        )
         engine.createConversation(config).use { conversation ->
             val reply = if (jsonSchema == null) {
                 conversation.sendMessage(prompt)

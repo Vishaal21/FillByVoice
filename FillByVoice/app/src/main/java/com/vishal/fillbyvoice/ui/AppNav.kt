@@ -19,7 +19,6 @@ import androidx.compose.ui.res.stringResource
 import com.vishal.fillbyvoice.R
 import com.vishal.fillbyvoice.voice.Language
 import com.vishal.fillbyvoice.voice.saveLanguage
-import com.vishal.fillbyvoice.voice.savedLanguage
 
 enum class Tab(val label: Int, val icon: Int) {
     SCAN(R.string.tab_scan, R.drawable.ic_scan),
@@ -31,7 +30,8 @@ enum class Tab(val label: Int, val icon: Int) {
 @Composable
 fun FillByVoiceApp() {
     val context = LocalContext.current
-    var language by remember { mutableStateOf(context.savedLanguage()) }
+    // Asked on every app start (press 1 / 2), not only the first: the phone may be shared (a Bank Mitra's customers).
+    var language by remember { mutableStateOf<Language?>(null) }
     var selected by rememberSaveable { mutableStateOf(Tab.SCAN) }
 
     val chosen = language
@@ -47,7 +47,8 @@ fun FillByVoiceApp() {
     Scaffold(
         bottomBar = {
             NavigationBar {
-                Tab.entries.forEach { tab ->
+                // Forms history was dropped (27 Sep), so its tab is hidden.
+                Tab.entries.filter { it != Tab.FORMS }.forEach { tab ->
                     NavigationBarItem(
                         selected = tab == selected,
                         onClick = { selected = tab },

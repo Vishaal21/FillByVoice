@@ -3,6 +3,7 @@ package com.vishal.fillbyvoice.camera
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.graphics.Rect
 import android.util.Size
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -17,8 +18,9 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-// About 2000 px on the short side: sharp enough for OCR, far smaller than the 50 MP sensor.
-private val PHOTO_SIZE = Size(2560, 1920)
+// 12 MP: the part shown on screen (a tall strip of the 4:3 picture) is still about 2000 px wide after the crop,
+// sharp enough for OCR, far smaller than the 50 MP sensor.
+private val PHOTO_SIZE = Size(4000, 3000)
 
 fun createCameraController(context: Context) = LifecycleCameraController(context).apply {
     setEnabledUseCases(CameraController.IMAGE_CAPTURE)
@@ -29,16 +31,17 @@ fun createCameraController(context: Context) = LifecycleCameraController(context
         .build()
 }
 
-// Takes one photo and returns it upright. Runs off the main thread.
+// Takes one photo and returns it upright, cut to what the preview showed. Runs off the main thread.
 suspend fun LifecycleCameraController.takePhoto(): Bitmap = suspendCancellableCoroutine { cont ->
     takePicture(
         Dispatchers.Default.asExecutor(),
         object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
                 val degrees = image.imageInfo.rotationDegrees
+                val crop = image.cropRect
                 val bitmap = image.toBitmap()
                 image.close()
-                cont.resume(bitmap.rotate(degrees))
+                cont.resume(bitmap.cropTo(crop).rotate(degrees))
             }
 
             override fun onError(exception: ImageCaptureException) {
@@ -46,6 +49,14 @@ suspend fun LifecycleCameraController.takePhoto(): Bitmap = suspendCancellableCo
             }
         },
     )
+}
+
+// The camera keeps the whole sensor picture; cropRect is the part the preview showed on screen.
+// Without this cut, text outside the user's frame (a browser bar, the desk) is read as questions.
+private fun Bitmap.cropTo(crop: Rect): Bitmap {
+    if (crop.width() == width && crop.height() == height) return this
+    if (!Rect(0, 0, width, height).contains(crop)) return this
+    return Bitmap.createBitmap(this, crop.left, crop.top, crop.width(), crop.height())
 }
 
 private fun Bitmap.rotate(degrees: Int): Bitmap {

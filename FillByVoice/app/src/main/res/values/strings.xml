@@ -18,10 +18,28 @@
     <string name="language_title">भाषा चुनें / Choose language</string>
     <string name="language_hindi">हिंदी</string>
     <string name="language_english">English</string>
+    <string name="language_prompt">Press 1 for English\nहिंदी के लिए 2 दबाएँ</string>
 
-    <string name="voice_test">Ask question 1</string>
-    <string name="voice_heard">Heard: %1$s</string>
-    <string name="voice_not_heard">(nothing heard, try again)</string>
+    <string name="scan_hint">फ़ॉर्म सीधा रखें, पूरा पेज फ़्रेम में\nHold the form flat, whole page in view</string>
+
+    <string name="heard_label">सुना / Heard</string>
+    <string name="is_this_right">सही है? / Is this right?</string>
+    <string name="mic_permission_needed">Microphone permission is needed to answer by voice</string>
+    <string name="question_number">Question %1$d of %2$d</string>
+    <string name="speak_now">बोलिए / Speak now</string>
+    <string name="phone_speaking">सुनिए… / Listen…</string>
+    <string name="mic_muted">माइक बंद है, चालू करने के लिए दबाएँ\nMic off · tap to turn on</string>
+    <string name="answers_title">आपके जवाब / Your answers</string>
+    <string name="answers_count">%1$d of %2$d answered · छोड़े गए सवाल हाथ से भरें</string>
+    <string name="all_right_title">सब सही है? / Is everything right?</string>
+    <string name="answer_skipped">छोड़ा गया / Skipped</string>
+
+    <string name="filled_form">भरा हुआ फ़ॉर्म / Filled form</string>
+    <string name="pdf_download">PDF डाउनलोड</string>
+    <string name="pdf_share">शेयर / Share</string>
+    <string name="pdf_saved">Downloads में सेव हुआ: %1$s</string>
+    <string name="pdf_failed">PDF नहीं बन पाया / Could not make the PDF</string>
+    <string name="pdf_share_title">Answer sheet</string>
 
     <string name="gemma_test">Test Gemma</string>
     <string name="gemma_loading">Loading Gemma…</string>

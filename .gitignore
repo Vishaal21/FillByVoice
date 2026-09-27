@@ -1,4 +1,31 @@
-.DS_Store
-.idea/
-.kotlin/
+# Notes and plans stay local: only the README goes to GitHub
+*.md
+!README.md
+
+# Logs, PDFs and the local log script
+*.log
+*.pdf
+logs.sh
+
+# The model file (2.6 GB, lives on the phone)
 *.litertlm
+
+# Build output (like node_modules in Node.js)
+build/
+.gradle/
+.kotlin/
+.cxx/
+.externalNativeBuild/
+captures/
+*.apk
+*.aab
+
+# Local machine settings and signing keys
+local.properties
+*.jks
+*.keystore
+*.iml
+.idea/
+.vscode/
+.claude/
+.DS_Store
