@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One-colour app icon for Android's themed icons: the same page and mic, with the lines and the mic cut out. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M37,30 H61 A5,5 0 0 1 66,35 V52.63 A15.5,15.5 0 0 0 50.72,76 H37 A5,5 0 0 1 32,71 V35 A5,5 0 0 1 37,30 Z M39.3,39.2 H58.7 A1.8,1.8 0 0 1 58.7,42.8 H39.3 A1.8,1.8 0 0 1 39.3,39.2 Z M39.3,47.2 H58.7 A1.8,1.8 0 0 1 58.7,50.8 H39.3 A1.8,1.8 0 0 1 39.3,47.2 Z M39.3,55.2 H46.2 A1.8,1.8 0 0 1 46.2,58.8 H39.3 A1.8,1.8 0 0 1 39.3,55.2 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M51,68 A13,13 0 1 0 77,68 A13,13 0 1 0 51,68 Z M60.6,61.9 A3.4,3.4 0 0 1 67.4,61.9 V66.1 A3.4,3.4 0 0 1 60.6,66.1 Z M57,66.5 A7,7 0 0 0 71,66.5 H69 A5,5 0 0 1 59,66.5 Z M63,73.5 H65 V77 H63 Z" />
+</vector>
